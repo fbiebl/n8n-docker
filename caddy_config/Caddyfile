@@ -1,5 +1,20 @@
-n8n.<domain>.<suffix> {
+{
+    log {
+        level WARN  # This filters out INFO logs and only shows WARN and ERROR logs
+    }
+}
+
+www.colenet-edu.de {
     reverse_proxy n8n:5678 {
       flush_interval -1
     }
+}
+
+qdrant.colenet-edu.de {
+    reverse_proxy qdrant:6333
+}
+
+
+ollama.colenet-edu.de {
+    reverse_proxy ollama:11434
 }
