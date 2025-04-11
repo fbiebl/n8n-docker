@@ -5,3 +5,5 @@ Get up and running with n8n on the following platforms:
 * [Hetzner Cloud tutorial](https://docs.n8n.io/hosting/server-setups/hetzner/) (Replace URL of repo with this repo!)
 
 If you have questions after trying the tutorials, check out the [forums](https://community.n8n.io/).
+
+Set up the zone file of your domain according to the instructions in the DNS directory.
