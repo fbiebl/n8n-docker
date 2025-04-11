@@ -1,35 +1,129 @@
-version: "3.7"
+volumes:
+  caddy_data:
+    external: true
+  n8n_data:
+    external: true
+  postgres_storage:
+  qdrant_storage:
+  ollama_storage:
+  
+networks:
+  n8n_network:
+    name: n8n_network  # Ensure it's always named properly
+    driver: bridge  # Explicitly set the network type
+    
 
 services:
+
   caddy:
     image: caddy:latest
     restart: unless-stopped
+    container_name: caddy
+    networks:
+      - n8n_network
     ports:
       - "80:80"
       - "443:443"
     volumes:
       - caddy_data:/data
       - ${DATA_FOLDER}/caddy_config:/config
-      - ${DATA_FOLDER}/caddy_config/Caddyfile:/etc/caddy/Caddyfile
+      - type: bind
+        source: ${DATA_FOLDER}/caddy_config/Caddyfile
+        target: /etc/caddy/Caddyfile
 
   n8n:
     image: docker.n8n.io/n8nio/n8n
+    container_name: n8n
     restart: always
+    user: root
+    networks:
+      - n8n_network
     ports:
       - 5678:5678
     environment:
+      - DB_TYPE=postgresdb
+      - DB_POSTGRESDB_HOST=postgres
+      - DB_POSTGRESDB_USER=${POSTGRES_USER}
+      - DB_POSTGRESDB_PASSWORD=${POSTGRES_PASSWORD}
+      - DB_POSTGRESDB_DATABASE=${POSTGRES_DB}
       - N8N_HOST=${SUBDOMAIN}.${DOMAIN_NAME}
       - N8N_PORT=5678
       - N8N_PROTOCOL=https
       - NODE_ENV=production
       - WEBHOOK_URL=https://${SUBDOMAIN}.${DOMAIN_NAME}/
       - GENERIC_TIMEZONE=${GENERIC_TIMEZONE}
+      - OLLAMA_HOST=ollama:11434
     volumes:
       - n8n_data:/home/node/.n8n
       - ${DATA_FOLDER}/local_files:/files
-      
-volumes:
-  caddy_data:
-    external: true
-  n8n_data:
-    external: true
+
+  qdrant:
+    image: qdrant/qdrant:latest
+    hostname: qdrant
+    restart: always
+    container_name: qdrant
+    networks:
+      - n8n_network
+    ports:
+      - 6333:6333
+      - 6334:6334
+    expose:
+      - 6333
+      - 6334
+      - 6335
+    volumes:
+      - qdrant_storage:/qdrant/storage
+
+  postgres:
+    image: postgres
+    restart: always
+    hostname: postgres
+    shm_size: 128mb
+    container_name: postgres
+    networks:
+      - n8n_network
+    environment:
+      - POSTGRES_USER
+      - POSTGRES_PASSWORD
+      - POSTGRES_DB
+    volumes:
+      - postgres_storage:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -h localhost -U ${POSTGRES_USER} -d ${POSTGRES_DB}']
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  adminer:
+    image: adminer
+    restart: always
+    ports:
+      - 8080:8080
+
+  ollama-cpu:
+    networks:
+      - n8n_network
+    image: ollama/ollama:latest
+    container_name: ollama
+    restart: unless-stopped
+    ports:
+      - 11434:11434
+    volumes:
+      - ollama_storage:/root/.ollama
+    
+  ollama-pull-llama-cpu:
+    networks:
+      - n8n_network
+    depends_on:
+      ollama-cpu:
+        condition: service_started
+    image: ollama/ollama:latest
+    container_name: ollama-pull-llama
+    volumes:
+      - ollama_storage:/root/.ollama
+    entrypoint: /bin/sh
+    environment:
+      - OLLAMA_HOST=ollama:11434
+    command:
+      - "-c"
+      - "sleep 3; ollama pull llama3.2"
