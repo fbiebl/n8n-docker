@@ -1,0 +1,17 @@
+$ORIGIN colenet-edu.de.
+$TTL 86400
+; SOA Records
+@		IN	SOA	hydrogen.ns.hetzner.com. dns.hetzner.com. 2025032002 86400 10800 3600000 3600
+; NS Records
+@		IN	NS	helium.ns.hetzner.de.
+@		IN	NS	hydrogen.ns.hetzner.com.
+@		IN	NS	oxygen.ns.hetzner.com.
+; MX Records
+@		IN	MX	10 mail
+; A Records
+@		IN	A	91.99.22.211
+mail		IN	A	91.99.22.211
+n8n		IN	A	91.99.22.211
+ollama		IN	A	91.99.22.211
+qdrant		IN	A	91.99.22.211
+www		IN	A	91.99.22.211
