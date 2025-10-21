@@ -75,7 +75,7 @@ services:
       - qdrant_storage:/qdrant/storage
 
   postgres:
-    image: postgres
+    image: postgres:17-alpine
     restart: always
     hostname: postgres
     shm_size: 128mb
